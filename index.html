@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoorDash Order Scheduler</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>🍔 DoorDash Scheduler</h1>
+            <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="favorites">Favorites</button>
+            <button class="tab-btn" data-tab="schedules">Schedules</button>
+        </nav>
+
+        <!-- Notification Banner (hidden by default) -->
+        <div id="notification-banner" class="notification-banner hidden">
+            <div class="notification-content">
+                <span class="notification-icon">🔔</span>
+                <div class="notification-text">
+                    <strong id="notification-title">Time to order!</strong>
+                    <span id="notification-message"></span>
+                </div>
+            </div>
+            <div class="notification-actions">
+                <button id="notification-order" class="btn btn-primary">Order Now</button>
+                <button id="notification-snooze" class="btn btn-secondary">Snooze 5m</button>
+                <button id="notification-dismiss" class="btn btn-text">Dismiss</button>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <main class="tab-content">
+            <!-- Favorites Tab -->
+            <section id="favorites-tab" class="tab-panel active">
+                <div class="panel-header">
+                    <h2>My Favorites</h2>
+                    <button id="add-favorite-btn" class="btn btn-primary">+ Add Favorite</button>
+                </div>
+                <div id="favorites-list" class="card-grid">
+                    <!-- Favorites cards rendered here -->
+                </div>
+                <div id="favorites-empty" class="empty-state hidden">
+                    <span class="empty-icon">⭐</span>
+                    <p>No favorites yet!</p>
+                    <p class="empty-hint">Save your go-to orders for quick reordering.</p>
+                </div>
+            </section>
+
+            <!-- Schedules Tab -->
+            <section id="schedules-tab" class="tab-panel hidden">
+                <div class="panel-header">
+                    <h2>My Schedules</h2>
+                    <button id="add-schedule-btn" class="btn btn-primary">+ Add Schedule</button>
+                </div>
+                <div id="schedules-list" class="schedule-list">
+                    <!-- Schedule items rendered here -->
+                </div>
+                <div id="schedules-empty" class="empty-state hidden">
+                    <span class="empty-icon">📅</span>
+                    <p>No schedules yet!</p>
+                    <p class="empty-hint">Set reminders so you never miss your favorite meals.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <!-- Add/Edit Favorite Modal -->
+    <div id="favorite-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="favorite-modal-title">Add Favorite</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="favorite-form">
+                <div class="form-group">
+                    <label for="favorite-name">Name *</label>
+                    <input type="text" id="favorite-name" required placeholder="e.g., My Chipotle Bowl">
+                </div>
+                <div class="form-group">
+                    <label for="restaurant-name">Restaurant Name *</label>
+                    <input type="text" id="restaurant-name" required placeholder="e.g., Chipotle Mexican Grill">
+                </div>
+                <div class="form-group">
+                    <label for="restaurant-url">DoorDash Store URL *</label>
+                    <input type="url" id="restaurant-url" required placeholder="https://www.doordash.com/store/...">
+                    <span class="field-hint">Paste the full URL from DoorDash</span>
+                </div>
+                <div class="form-group">
+                    <label for="order-items">Order Items</label>
+                    <div id="items-container">
+                        <!-- Dynamic item inputs -->
+                    </div>
+                    <button type="button" id="add-item-btn" class="btn btn-text">+ Add Item</button>
+                </div>
+                <div class="form-group">
+                    <label for="special-instructions">Special Instructions</label>
+                    <textarea id="special-instructions" rows="2" placeholder="e.g., Extra napkins, no onions"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="estimated-total">Estimated Total ($)</label>
+                    <input type="number" id="estimated-total" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label for="favorite-tags">Tags (comma-separated)</label>
+                    <input type="text" id="favorite-tags" placeholder="lunch, quick, healthy">
+                </div>
+                <input type="hidden" id="favorite-id">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Favorite</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add/Edit Schedule Modal -->
+    <div id="schedule-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="schedule-modal-title">Add Schedule</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="schedule-form">
+                <div class="form-group">
+                    <label for="schedule-name">Schedule Name *</label>
+                    <input type="text" id="schedule-name" required placeholder="e.g., Weekday Lunch">
+                </div>
+                <div class="form-group">
+                    <label for="schedule-favorite">Favorite Order *</label>
+                    <select id="schedule-favorite" required>
+                        <option value="">Select a favorite...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Schedule Type *</label>
+                    <div class="radio-group">
+                        <label class="radio-label">
+                            <input type="radio" name="schedule-type" value="once" checked>
+                            <span>One-time</span>
+                        </label>
+                        <label class="radio-label">
+                            <input type="radio" name="schedule-type" value="recurring">
+                            <span>Recurring</span>
+                        </label>
+                    </div>
+                </div>
+                <div id="once-options" class="form-group">
+                    <label for="schedule-datetime">Date & Time *</label>
+                    <input type="datetime-local" id="schedule-datetime">
+                </div>
+                <div id="recurring-options" class="form-group hidden">
+                    <label>Days of Week *</label>
+                    <div class="checkbox-group days-grid">
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="0"><span>Sun</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="1"><span>Mon</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="2"><span>Tue</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="3"><span>Wed</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="4"><span>Thu</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="5"><span>Fri</span></label>
+                        <label class="checkbox-label"><input type="checkbox" name="schedule-days" value="6"><span>Sat</span></label>
+                    </div>
+                    <label for="schedule-time">Time *</label>
+                    <input type="time" id="schedule-time">
+                </div>
+                <div class="form-group">
+                    <label for="reminder-minutes">Remind me</label>
+                    <select id="reminder-minutes">
+                        <option value="0">At scheduled time</option>
+                        <option value="5">5 minutes before</option>
+                        <option value="10">10 minutes before</option>
+                        <option value="15" selected>15 minutes before</option>
+                        <option value="30">30 minutes before</option>
+                        <option value="60">1 hour before</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="schedule-autoopen">
+                        <span>Auto-open DoorDash when triggered</span>
+                    </label>
+                </div>
+                <input type="hidden" id="schedule-id">
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary modal-cancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Schedule</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Settings</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="settings-content">
+                <div class="settings-section">
+                    <h4>Notifications</h4>
+                    <div class="setting-row">
+                        <span>Browser Notifications</span>
+                        <button id="notification-permission-btn" class="btn btn-secondary">Enable</button>
+                    </div>
+                    <p id="notification-status" class="setting-hint">Status: Unknown</p>
+                </div>
+                <div class="settings-section">
+                    <h4>Automation Server</h4>
+                    <div class="setting-row">
+                        <span>Server Status</span>
+                        <span id="server-status" class="status-badge status-unknown">Checking...</span>
+                    </div>
+                    <p class="setting-hint">Start with: <code>cd server && npm start</code></p>
+                </div>
+                <div class="settings-section">
+                    <h4>Data Management</h4>
+                    <div class="setting-row">
+                        <button id="export-data-btn" class="btn btn-secondary">Export Data</button>
+                        <button id="import-data-btn" class="btn btn-secondary">Import Data</button>
+                    </div>
+                    <input type="file" id="import-file" accept=".json" class="hidden">
+                    <div class="setting-row danger-zone">
+                        <button id="clear-data-btn" class="btn btn-danger">Clear All Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal" class="modal hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3 id="confirm-title">Confirm</h3>
+            </div>
+            <p id="confirm-message">Are you sure?</p>
+            <div class="modal-actions">
+                <button id="confirm-cancel" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-ok" class="btn btn-danger">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/models.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/scheduler.js"></script>
+    <script src="js/doordash.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
