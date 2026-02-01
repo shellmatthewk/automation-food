@@ -8,29 +8,45 @@ const { SELECTORS, TIMEOUTS } = require('./selectors');
  * @param {string} orderData.storeName - Restaurant name
  * @param {Array<string>} orderData.items - Items to add to cart
  * @param {string} orderData.specialInstructions - Special instructions
+ * @param {object} orderData.options - Automation options
+ * @param {boolean} orderData.options.headless - Run in headless mode
+ * @param {string} orderData.options.chromeProfile - Path to Chrome profile directory
  * @returns {Promise<object>} Result with itemsAdded count
  */
 async function automateOrder(orderData) {
-    const { storeUrl, storeName, items, specialInstructions } = orderData;
+    const { storeUrl, storeName, items, specialInstructions, options = {} } = orderData;
+
+    const headless = options.headless || false;
+    const chromeProfile = options.chromeProfile || null;
+    const deliveryAddress = options.deliveryAddress || null;
 
     let browser;
     let itemsAdded = 0;
 
     try {
         console.log('Launching browser...');
+        console.log(`Mode: ${headless ? 'headless' : 'visible'}`);
+        if (chromeProfile) {
+            console.log(`Using Chrome profile: ${chromeProfile}`);
+        }
+        if (deliveryAddress) {
+            console.log(`Delivery address: ${deliveryAddress}`);
+        }
 
-        // Launch browser with visible window
-        browser = await puppeteer.launch({
-            headless: false,
-            defaultViewport: null,
+        const launchOptions = {
+            headless: headless,
+            defaultViewport: headless ? { width: 1920, height: 1080 } : null,
             args: [
                 '--start-maximized',
                 '--disable-blink-features=AutomationControlled'
-            ],
-            // Use default Chrome profile to leverage existing login
-            // Uncomment and modify path for your system if needed:
-            // userDataDir: '/Users/YOUR_USER/Library/Application Support/Google/Chrome/Default'
-        });
+            ]
+        };
+
+        if (chromeProfile) {
+            launchOptions.userDataDir = chromeProfile;
+        }
+
+        browser = await puppeteer.launch(launchOptions);
 
         const page = await browser.newPage();
 
@@ -57,7 +73,11 @@ async function automateOrder(orderData) {
         // Check for login prompt
         const loginPrompt = await page.$(SELECTORS.LOGIN_MODAL);
         if (loginPrompt) {
-            console.log('\n⚠️  Login required!');
+            if (headless) {
+                throw new Error('Login required. Cannot log in while running headless. Please set a Chrome profile path with an existing DoorDash login, or run in visible mode first to log in.');
+            }
+
+            console.log('\nLogin required!');
             console.log('Please log in to DoorDash in the browser window.');
             console.log('The script will wait for you to complete login...\n');
 
@@ -101,15 +121,21 @@ async function automateOrder(orderData) {
         console.log(`\n${'='.repeat(40)}`);
         console.log(`Added ${itemsAdded} of ${items.length} items to cart`);
         console.log(`${'='.repeat(40)}`);
-        console.log('\n📋 Please review your cart and complete checkout manually.\n');
 
-        // Keep browser open for user to review and checkout
-        // Don't close the browser automatically
+        if (headless) {
+            console.log('\nHeadless mode complete. Browser will close.');
+            console.log('Open DoorDash in your browser to review cart and checkout.\n');
+            await browser.close();
+        } else {
+            console.log('\nPlease review your cart and complete checkout manually.\n');
+            // Keep browser open for user to review and checkout
+        }
 
         return {
             success: true,
             message: `Added ${itemsAdded} of ${items.length} items to cart`,
-            itemsAdded
+            itemsAdded,
+            headless
         };
 
     } catch (error) {

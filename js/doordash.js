@@ -52,9 +52,10 @@ const DoorDash = {
     /**
      * Trigger automation for a favorite order
      * @param {object} favorite - Favorite order data
+     * @param {object} triggerInfo - Optional trigger info (for scheduled orders)
      * @returns {Promise<object>} Result with success status and message
      */
-    async triggerOrder(favorite) {
+    async triggerOrder(favorite, triggerInfo = {}) {
         if (this.isAutomating) {
             UI.showToast('Automation already in progress', 'warning');
             return { success: false, message: 'Already automating' };
@@ -70,6 +71,24 @@ const DoorDash = {
                 throw new Error('Automation server is not running. Start it with: cd server && npm start');
             }
 
+            // Get automation settings
+            const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+
+            // Get selected delivery address
+            let deliveryAddress = null;
+            if (settings.selectedAddressId && settings.addresses) {
+                const selectedAddr = settings.addresses.find(a => a.id === settings.selectedAddressId);
+                if (selectedAddr) {
+                    deliveryAddress = selectedAddr.address;
+                }
+            }
+
+            const options = {
+                headless: settings.headlessMode || false,
+                chromeProfile: settings.chromeProfile || null,
+                deliveryAddress: deliveryAddress
+            };
+
             // Send order request
             const response = await fetch(`${this.SERVER_URL}/api/order`, {
                 method: 'POST',
@@ -80,7 +99,8 @@ const DoorDash = {
                     storeUrl: favorite.restaurant.storeUrl,
                     storeName: favorite.restaurant.name,
                     items: favorite.orderDetails.items,
-                    specialInstructions: favorite.orderDetails.specialInstructions
+                    specialInstructions: favorite.orderDetails.specialInstructions,
+                    options
                 })
             });
 
@@ -93,12 +113,50 @@ const DoorDash = {
             // Mark favorite as ordered
             FavoritesModel.markOrdered(favorite.id);
 
-            UI.showToast('Cart filled! Review and checkout in browser.', 'success', 5000);
+            // Log to order history
+            const itemsAdded = result.itemsAdded || favorite.orderDetails.items.length;
+            const totalItems = favorite.orderDetails.items.length;
+            const status = itemsAdded === 0 ? 'failed'
+                : itemsAdded < totalItems ? 'partial'
+                : 'completed';
+
+            OrderHistoryModel.add({
+                favoriteId: favorite.id,
+                favoriteName: favorite.name,
+                restaurantName: favorite.restaurant.name,
+                items: favorite.orderDetails.items,
+                itemsAdded: itemsAdded,
+                status: status,
+                triggeredBy: triggerInfo.triggeredBy || 'manual',
+                scheduleId: triggerInfo.scheduleId || null,
+                scheduleName: triggerInfo.scheduleName || null
+            });
+
+            if (options.headless) {
+                UI.showToast('Cart filled! Open DoorDash to review and checkout.', 'success', 5000);
+            } else {
+                UI.showToast('Cart filled! Review and checkout in browser.', 'success', 5000);
+            }
             UI.renderFavorites();
 
             return { success: true, message: result.message };
         } catch (error) {
             console.error('Order automation error:', error);
+
+            // Log failed order to history
+            OrderHistoryModel.add({
+                favoriteId: favorite.id,
+                favoriteName: favorite.name,
+                restaurantName: favorite.restaurant.name,
+                items: favorite.orderDetails.items,
+                itemsAdded: 0,
+                status: 'failed',
+                triggeredBy: triggerInfo.triggeredBy || 'manual',
+                scheduleId: triggerInfo.scheduleId || null,
+                scheduleName: triggerInfo.scheduleName || null,
+                errorMessage: error.message
+            });
+
             UI.showToast(error.message, 'error', 5000);
             return { success: false, message: error.message };
         } finally {

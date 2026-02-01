@@ -5,7 +5,8 @@ const Storage = {
     KEYS: {
         FAVORITES: 'doordash_favorites',
         SCHEDULES: 'doordash_schedules',
-        SETTINGS: 'doordash_settings'
+        SETTINGS: 'doordash_settings',
+        ORDER_HISTORY: 'doordash_order_history'
     },
 
     /**
@@ -93,6 +94,10 @@ const Storage = {
 
             if (data.settings && typeof data.settings === 'object') {
                 this.set(this.KEYS.SETTINGS, data.settings);
+            }
+
+            if (data.order_history && Array.isArray(data.order_history)) {
+                this.set(this.KEYS.ORDER_HISTORY, data.order_history);
             }
 
             return { success: true, message: 'Data imported successfully' };

@@ -19,6 +19,7 @@ const App = {
         this.bindScheduleEvents();
         this.bindSettingsEvents();
         this.bindNotificationBannerEvents();
+        this.bindHistoryEvents();
 
         // Initialize scheduler
         Scheduler.init();
@@ -135,6 +136,32 @@ const App = {
             UI.openModal(UI.settingsModal);
             this.checkServerStatus();
             UI.updateNotificationStatus();
+            this.loadAutomationSettings();
+        });
+
+        // Address selection
+        document.getElementById('address-select').addEventListener('change', (e) => {
+            this.saveSelectedAddress(e.target.value);
+        });
+
+        // Add address
+        document.getElementById('add-address-btn').addEventListener('click', () => {
+            this.addAddress();
+        });
+
+        // Delete address
+        document.getElementById('delete-address-btn').addEventListener('click', () => {
+            this.deleteSelectedAddress();
+        });
+
+        // Headless mode toggle
+        document.getElementById('headless-mode').addEventListener('change', (e) => {
+            this.saveAutomationSettings();
+        });
+
+        // Chrome profile path
+        document.getElementById('chrome-profile').addEventListener('change', (e) => {
+            this.saveAutomationSettings();
         });
 
         // Notification permission
@@ -190,6 +217,44 @@ const App = {
 
         document.getElementById('notification-dismiss').addEventListener('click', () => {
             UI.hideNotificationBanner();
+        });
+    },
+
+    /**
+     * Bind history panel events
+     */
+    bindHistoryEvents() {
+        // Open history panel
+        document.getElementById('history-toggle-btn').addEventListener('click', () => {
+            UI.openHistoryPanel();
+        });
+
+        // Close history panel
+        document.getElementById('history-close-btn').addEventListener('click', () => {
+            UI.closeHistoryPanel();
+        });
+
+        // Close on backdrop click
+        document.getElementById('history-backdrop').addEventListener('click', () => {
+            UI.closeHistoryPanel();
+        });
+
+        // Filter change
+        document.getElementById('history-filter').addEventListener('change', (e) => {
+            UI.renderHistory(e.target.value);
+        });
+
+        // Clear history
+        document.getElementById('history-clear-btn').addEventListener('click', async () => {
+            const confirmed = await UI.confirm(
+                'Clear History',
+                'This will delete all order history. This cannot be undone.'
+            );
+            if (confirmed) {
+                OrderHistoryModel.clearAll();
+                UI.renderHistory();
+                UI.showToast('History cleared', 'success');
+            }
         });
     },
 
@@ -465,6 +530,119 @@ const App = {
     async checkServerStatus() {
         const connected = await DoorDash.checkServer();
         UI.updateServerStatus(connected);
+    },
+
+    /**
+     * Load automation settings into the settings form
+     */
+    loadAutomationSettings() {
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        this.populateAddressSelect(settings.addresses || [], settings.selectedAddressId);
+        document.getElementById('headless-mode').checked = settings.headlessMode || false;
+        document.getElementById('chrome-profile').value = settings.chromeProfile || '';
+    },
+
+    /**
+     * Populate address select dropdown
+     * @param {Array} addresses - List of saved addresses
+     * @param {string} selectedId - Currently selected address ID
+     */
+    populateAddressSelect(addresses, selectedId) {
+        const select = document.getElementById('address-select');
+        select.innerHTML = '<option value="">Select an address...</option>';
+
+        addresses.forEach(addr => {
+            const option = document.createElement('option');
+            option.value = addr.id;
+            option.textContent = `${addr.label}: ${addr.address}`;
+            if (addr.id === selectedId) {
+                option.selected = true;
+            }
+            select.appendChild(option);
+        });
+    },
+
+    /**
+     * Add a new address
+     */
+    addAddress() {
+        const labelInput = document.getElementById('address-label');
+        const valueInput = document.getElementById('address-value');
+
+        const label = labelInput.value.trim();
+        const address = valueInput.value.trim();
+
+        if (!label || !address) {
+            UI.showToast('Please enter both label and address', 'error');
+            return;
+        }
+
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        if (!settings.addresses) {
+            settings.addresses = [];
+        }
+
+        const newAddress = {
+            id: Storage.generateId(),
+            label: label,
+            address: address
+        };
+
+        settings.addresses.push(newAddress);
+        settings.selectedAddressId = newAddress.id;
+        Storage.set(Storage.KEYS.SETTINGS, settings);
+
+        // Update UI
+        this.populateAddressSelect(settings.addresses, settings.selectedAddressId);
+        labelInput.value = '';
+        valueInput.value = '';
+
+        UI.showToast('Address added', 'success');
+    },
+
+    /**
+     * Delete the selected address
+     */
+    deleteSelectedAddress() {
+        const select = document.getElementById('address-select');
+        const selectedId = select.value;
+
+        if (!selectedId) {
+            UI.showToast('No address selected', 'error');
+            return;
+        }
+
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        settings.addresses = (settings.addresses || []).filter(addr => addr.id !== selectedId);
+
+        if (settings.selectedAddressId === selectedId) {
+            settings.selectedAddressId = null;
+        }
+
+        Storage.set(Storage.KEYS.SETTINGS, settings);
+        this.populateAddressSelect(settings.addresses, settings.selectedAddressId);
+
+        UI.showToast('Address deleted', 'success');
+    },
+
+    /**
+     * Save the selected address
+     * @param {string} addressId - Selected address ID
+     */
+    saveSelectedAddress(addressId) {
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        settings.selectedAddressId = addressId || null;
+        Storage.set(Storage.KEYS.SETTINGS, settings);
+    },
+
+    /**
+     * Save automation settings from the settings form
+     */
+    saveAutomationSettings() {
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        settings.headlessMode = document.getElementById('headless-mode').checked;
+        settings.chromeProfile = document.getElementById('chrome-profile').value.trim() || null;
+        Storage.set(Storage.KEYS.SETTINGS, settings);
     },
 
     /**

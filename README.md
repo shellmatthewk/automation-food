@@ -1,14 +1,28 @@
 # DoorDash Order Scheduler
 
-A browser-based app to save favorite DoorDash orders, schedule reminders, and automate cart filling via Puppeteer.
+A local-first web application for automating DoorDash orders with scheduled reminders, saved favorites, and Puppeteer-powered cart filling.
+
+Built with vanilla JavaScript, Express, and Puppeteer. No frameworks, no database required.
 
 ## Features
 
-- **Favorites Management**: Save your go-to DoorDash orders with restaurant info, items, and special instructions
-- **Scheduling**: Set one-time or recurring reminders for your favorite orders
-- **Browser Notifications**: Get system notifications when it's time to order
-- **Puppeteer Automation**: Automatically fill your cart with saved items (requires local server)
-- **Data Portability**: Export/import your data as JSON
+- **Favorite Orders** - Save restaurants, menu items, and special instructions for quick reordering
+- **Smart Scheduling** - One-time or recurring reminders (e.g., weekday lunches at noon)
+- **Browser Automation** - Puppeteer navigates to store, searches items, and fills your cart
+- **Headless Mode** - Run automation in background using your Chrome profile
+- **Order History** - Track past orders with time-based filtering (today, week, month)
+- **Multiple Addresses** - Save home, work, and other delivery locations
+- **Data Portability** - Export/import everything as JSON
+- **Responsive UI** - Side-by-side layout on desktop, stacked on mobile
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|------------|
+| Frontend | Vanilla JS, CSS Custom Properties, Inter font |
+| Backend | Node.js, Express |
+| Automation | Puppeteer |
+| Storage | localStorage (no database) |
 
 ## Quick Start
 
@@ -70,35 +84,34 @@ When a schedule triggers (or you click "Order Now"):
 
 ## Settings
 
-Click the ⚙️ icon to access settings:
+Click "Settings" to access:
 
-- **Enable Notifications**: Grant permission for browser notifications
-- **Server Status**: Check if the automation server is running
-- **Export Data**: Download your favorites and schedules as JSON
-- **Import Data**: Restore from a previously exported JSON file
-- **Clear All Data**: Delete all saved data (cannot be undone)
+- **Delivery Addresses** - Add/remove multiple addresses, select active one
+- **Notifications** - Enable browser notifications for reminders
+- **Headless Mode** - Run automation without visible browser window
+- **Chrome Profile** - Path to Chrome profile with saved DoorDash login
+- **Server Status** - Check if automation server is running
+- **Export/Import** - Backup and restore all data as JSON
 
 ## Project Structure
 
 ```
-automation-food/
-├── index.html              # Single-page app
+├── index.html                 # Single-page application
 ├── css/
-│   └── styles.css          # Styling
+│   └── styles.css             # CSS variables, responsive grid, animations
 ├── js/
-│   ├── app.js              # App initialization
-│   ├── storage.js          # LocalStorage abstraction
-│   ├── models.js           # Data models & CRUD
-│   ├── ui.js               # DOM manipulation
-│   ├── scheduler.js        # Timer/reminder logic
-│   └── doordash.js         # URL validation & API calls
+│   ├── app.js                 # Initialization, event binding
+│   ├── storage.js             # localStorage abstraction
+│   ├── models.js              # Favorites, Schedules, OrderHistory models
+│   ├── ui.js                  # DOM rendering, modals, toasts
+│   ├── scheduler.js           # Polling, notifications, snooze
+│   └── doordash.js            # URL validation, server API calls
 ├── server/
-│   ├── package.json        # Node.js dependencies
-│   ├── server.js           # Express API server
+│   ├── server.js              # Express REST API
 │   └── puppeteer/
-│       ├── autoorder.js    # DoorDash automation
-│       └── selectors.js    # DOM selectors
-└── README.md
+│       ├── autoorder.js       # Browser automation logic
+│       └── selectors.js       # DoorDash DOM selectors
+└── Inter-4.1/                 # Inter variable font
 ```
 
 ## Technical Notes
@@ -115,13 +128,14 @@ JavaScript timers only work while the tab is open/active. The app uses multiple 
 
 The automation script:
 
-1. Opens a visible Chrome window (not headless)
+1. Launches Chrome (visible or headless mode)
 2. Navigates to the DoorDash store URL
-3. Searches for each saved item by name
-4. Clicks "Add to Cart" for matches
-5. **Stops before checkout** - you review and pay manually
+3. Detects login prompts (waits for manual login or uses Chrome profile)
+4. Searches for each saved item by name (fuzzy matching)
+5. Clicks "Add to Cart" for matches
+6. **Stops before checkout** - you review and pay manually
 
-The script uses fuzzy matching to find items even if names aren't exact.
+**Headless Mode**: Enable in Settings with a Chrome profile path. The browser runs in background and closes automatically after filling the cart.
 
 ### DoorDash DOM Selectors
 
@@ -151,11 +165,12 @@ npm start
 
 ### Login required
 
-The Puppeteer script opens a fresh browser. You'll need to log in to DoorDash the first time. To avoid this:
+In visible mode, log in when prompted. For headless mode:
 
-1. Edit `server/puppeteer/autoorder.js`
-2. Uncomment the `userDataDir` line
-3. Set the path to your Chrome profile
+1. Open Settings
+2. Enter your Chrome Profile Path (e.g., `~/Library/Application Support/Google/Chrome/Default`)
+3. Ensure you're logged into DoorDash in that Chrome profile
+4. Enable "Run headless"
 
 ### Notifications not appearing
 
@@ -166,13 +181,14 @@ The Puppeteer script opens a fresh browser. You'll need to log in to DoorDash th
 
 ## Data Storage
 
-All data is stored in your browser's LocalStorage:
+All data is stored in browser LocalStorage (no backend database):
 
-- `doordash_favorites`: Your saved orders
-- `doordash_schedules`: Your reminder schedules
-- `doordash_settings`: App settings
+- `doordash_favorites` - Saved orders
+- `doordash_schedules` - Reminder schedules
+- `doordash_settings` - Addresses, headless mode, Chrome profile
+- `doordash_order_history` - Past orders (last 100)
 
-Use the Export feature to back up your data before clearing browser data.
+Use Export to back up before clearing browser data.
 
 ## Development
 

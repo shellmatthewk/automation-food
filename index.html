@@ -10,20 +10,14 @@
     <div class="app-container">
         <!-- Header -->
         <header class="app-header">
-            <h1>🍔 DoorDash Scheduler</h1>
-            <button id="settings-btn" class="icon-btn" title="Settings">⚙️</button>
+            <h1>DoorDash Scheduler</h1>
+            <button id="settings-btn" class="icon-btn" title="Settings">Settings</button>
         </header>
 
-        <!-- Navigation Tabs -->
-        <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="favorites">Favorites</button>
-            <button class="tab-btn" data-tab="schedules">Schedules</button>
-        </nav>
 
         <!-- Notification Banner (hidden by default) -->
         <div id="notification-banner" class="notification-banner hidden">
             <div class="notification-content">
-                <span class="notification-icon">🔔</span>
                 <div class="notification-text">
                     <strong id="notification-title">Time to order!</strong>
                     <span id="notification-message"></span>
@@ -48,14 +42,13 @@
                     <!-- Favorites cards rendered here -->
                 </div>
                 <div id="favorites-empty" class="empty-state hidden">
-                    <span class="empty-icon">⭐</span>
-                    <p>No favorites yet!</p>
+                    <p>No favorites yet</p>
                     <p class="empty-hint">Save your go-to orders for quick reordering.</p>
                 </div>
             </section>
 
             <!-- Schedules Tab -->
-            <section id="schedules-tab" class="tab-panel hidden">
+            <section id="schedules-tab" class="tab-panel">
                 <div class="panel-header">
                     <h2>My Schedules</h2>
                     <button id="add-schedule-btn" class="btn btn-primary">+ Add Schedule</button>
@@ -64,8 +57,7 @@
                     <!-- Schedule items rendered here -->
                 </div>
                 <div id="schedules-empty" class="empty-state hidden">
-                    <span class="empty-icon">📅</span>
-                    <p>No schedules yet!</p>
+                    <p>No schedules yet</p>
                     <p class="empty-hint">Set reminders so you never miss your favorite meals.</p>
                 </div>
             </section>
@@ -74,6 +66,39 @@
         <!-- Toast Container -->
         <div id="toast-container" class="toast-container"></div>
     </div>
+
+    <!-- History Side Button -->
+    <button id="history-toggle-btn" class="history-toggle-btn" title="Order History">
+        History
+    </button>
+
+    <!-- History Side Panel -->
+    <div id="history-panel" class="history-panel hidden">
+        <div class="history-panel-header">
+            <h3>Order History</h3>
+            <button id="history-close-btn" class="history-close-btn">&times;</button>
+        </div>
+        <div class="history-panel-filter">
+            <label for="history-filter">Show:</label>
+            <select id="history-filter">
+                <option value="today">Today</option>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="all" selected>All Time</option>
+            </select>
+        </div>
+        <div id="history-list" class="history-list">
+            <!-- History entries rendered here -->
+        </div>
+        <div id="history-empty" class="history-empty hidden">
+            <p>No orders yet</p>
+            <p class="empty-hint">Your order history will appear here.</p>
+        </div>
+        <div class="history-panel-footer">
+            <button id="history-clear-btn" class="btn btn-text btn-small">Clear History</button>
+        </div>
+    </div>
+    <div id="history-backdrop" class="history-backdrop hidden"></div>
 
     <!-- Add/Edit Favorite Modal -->
     <div id="favorite-modal" class="modal hidden">
@@ -219,12 +244,41 @@
                     <p id="notification-status" class="setting-hint">Status: Unknown</p>
                 </div>
                 <div class="settings-section">
+                    <h4>Delivery Address</h4>
+                    <div class="address-selector">
+                        <select id="address-select">
+                            <option value="">Select an address...</option>
+                        </select>
+                        <button type="button" id="delete-address-btn" class="btn btn-text btn-small" title="Delete selected address">Delete</button>
+                    </div>
+                    <div class="address-add-form">
+                        <input type="text" id="address-label" placeholder="Label (e.g., Home, Work)">
+                        <input type="text" id="address-value" placeholder="123 Main St, City, State ZIP">
+                        <button type="button" id="add-address-btn" class="btn btn-secondary btn-small">Add</button>
+                    </div>
+                </div>
+                <div class="settings-section">
                     <h4>Automation Server</h4>
                     <div class="setting-row">
                         <span>Server Status</span>
                         <span id="server-status" class="status-badge status-unknown">Checking...</span>
                     </div>
                     <p class="setting-hint">Start with: <code>cd server && npm start</code></p>
+                </div>
+                <div class="settings-section">
+                    <h4>Automation Mode</h4>
+                    <div class="setting-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="headless-mode">
+                            <span>Run headless (no visible browser)</span>
+                        </label>
+                    </div>
+                    <p class="setting-hint">Runs in the background. Requires Chrome profile with saved login.</p>
+                    <div class="form-group" style="margin-top: 12px;">
+                        <label for="chrome-profile">Chrome Profile Path</label>
+                        <input type="text" id="chrome-profile" placeholder="/Users/you/Library/Application Support/Google/Chrome/Default">
+                        <span class="field-hint">Path to Chrome profile with DoorDash login. Required for headless mode.</span>
+                    </div>
                 </div>
                 <div class="settings-section">
                     <h4>Data Management</h4>

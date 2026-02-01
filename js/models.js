@@ -398,3 +398,75 @@ const SchedulesModel = {
         });
     }
 };
+
+const OrderHistoryModel = {
+    /**
+     * Get all order history entries
+     * @returns {Array} Array of order history entries (newest first)
+     */
+    getAll() {
+        const history = Storage.get(Storage.KEYS.ORDER_HISTORY) || [];
+        return history.sort((a, b) => new Date(b.orderedAt) - new Date(a.orderedAt));
+    },
+
+    /**
+     * Add a new order to history
+     * @param {object} data - Order data
+     * @returns {object} Created history entry
+     */
+    add(data) {
+        const history = Storage.get(Storage.KEYS.ORDER_HISTORY) || [];
+
+        const entry = {
+            id: Storage.generateId(),
+            favoriteId: data.favoriteId,
+            favoriteName: data.favoriteName,
+            restaurantName: data.restaurantName,
+            items: data.items || [],
+            itemsAdded: data.itemsAdded || 0,
+            status: data.status || 'completed', // 'completed', 'failed', 'partial'
+            orderedAt: new Date().toISOString(),
+            triggeredBy: data.triggeredBy || 'manual', // 'manual', 'schedule'
+            scheduleId: data.scheduleId || null,
+            scheduleName: data.scheduleName || null,
+            errorMessage: data.errorMessage || null
+        };
+
+        history.push(entry);
+
+        // Keep only last 100 entries
+        if (history.length > 100) {
+            history.splice(0, history.length - 100);
+        }
+
+        Storage.set(Storage.KEYS.ORDER_HISTORY, history);
+        return entry;
+    },
+
+    /**
+     * Clear all order history
+     */
+    clearAll() {
+        Storage.set(Storage.KEYS.ORDER_HISTORY, []);
+    },
+
+    /**
+     * Get order count for today
+     * @returns {number} Number of orders today
+     */
+    getTodayCount() {
+        const history = this.getAll();
+        const today = new Date().toDateString();
+        return history.filter(entry =>
+            new Date(entry.orderedAt).toDateString() === today
+        ).length;
+    },
+
+    /**
+     * Get total order count
+     * @returns {number} Total number of orders
+     */
+    getTotalCount() {
+        return this.getAll().length;
+    }
+};

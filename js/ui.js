@@ -521,5 +521,160 @@ const UI = {
         return Array.from(inputs)
             .map(input => input.value.trim())
             .filter(val => val !== '');
+    },
+
+    /**
+     * Open history panel
+     */
+    openHistoryPanel() {
+        const panel = document.getElementById('history-panel');
+        const backdrop = document.getElementById('history-backdrop');
+
+        panel.classList.remove('hidden');
+        backdrop.classList.remove('hidden');
+
+        // Trigger animation
+        requestAnimationFrame(() => {
+            panel.classList.add('show');
+            backdrop.classList.add('show');
+        });
+
+        this.renderHistory();
+    },
+
+    /**
+     * Close history panel
+     */
+    closeHistoryPanel() {
+        const panel = document.getElementById('history-panel');
+        const backdrop = document.getElementById('history-backdrop');
+
+        panel.classList.remove('show');
+        backdrop.classList.remove('show');
+
+        setTimeout(() => {
+            panel.classList.add('hidden');
+            backdrop.classList.add('hidden');
+        }, 300);
+    },
+
+    /**
+     * Render order history with optional filter
+     * @param {string} filter - Filter value (today, week, month, all)
+     */
+    renderHistory(filter = null) {
+        const filterSelect = document.getElementById('history-filter');
+        const currentFilter = filter || filterSelect.value || 'all';
+
+        const history = this.filterHistory(OrderHistoryModel.getAll(), currentFilter);
+        const list = document.getElementById('history-list');
+        const empty = document.getElementById('history-empty');
+
+        if (history.length === 0) {
+            list.innerHTML = '';
+            list.classList.add('hidden');
+            empty.classList.remove('hidden');
+            return;
+        }
+
+        empty.classList.add('hidden');
+        list.classList.remove('hidden');
+        list.innerHTML = history.map(entry => this.createHistoryEntry(entry)).join('');
+    },
+
+    /**
+     * Filter history by time frame
+     * @param {Array} history - All history entries
+     * @param {string} filter - Filter value
+     * @returns {Array} Filtered history
+     */
+    filterHistory(history, filter) {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        const weekStart = new Date(today);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        return history.filter(entry => {
+            const entryDate = new Date(entry.orderedAt);
+
+            switch (filter) {
+                case 'today':
+                    return entryDate >= today;
+                case 'week':
+                    return entryDate >= weekStart;
+                case 'month':
+                    return entryDate >= monthStart;
+                case 'all':
+                default:
+                    return true;
+            }
+        });
+    },
+
+    /**
+     * Create history entry HTML
+     * @param {object} entry - History entry
+     * @returns {string} HTML string
+     */
+    createHistoryEntry(entry) {
+        const date = new Date(entry.orderedAt);
+        const timeStr = date.toLocaleTimeString(undefined, {
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+        const dateStr = this.formatHistoryDate(date);
+
+        const itemsText = entry.items.length > 0
+            ? entry.items.slice(0, 3).join(', ') + (entry.items.length > 3 ? '...' : '')
+            : 'No items specified';
+
+        const statusClass = entry.status;
+        const statusText = entry.status === 'completed' ? 'Done'
+            : entry.status === 'partial' ? 'Partial'
+            : 'Failed';
+
+        const triggerText = entry.triggeredBy === 'schedule'
+            ? `via ${entry.scheduleName || 'schedule'}`
+            : 'Manual';
+
+        return `
+            <div class="history-entry">
+                <div class="history-entry-header">
+                    <span class="history-entry-name">${this.escapeHtml(entry.favoriteName)}</span>
+                    <span class="history-entry-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="history-entry-restaurant">${this.escapeHtml(entry.restaurantName)}</div>
+                <div class="history-entry-items">${this.escapeHtml(itemsText)}</div>
+                <div class="history-entry-meta">
+                    <span class="history-entry-time">${dateStr} at ${timeStr}</span>
+                    <span class="history-entry-trigger">${triggerText}</span>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Format date for history display
+     * @param {Date} date - Date object
+     * @returns {string} Formatted date string
+     */
+    formatHistoryDate(date) {
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) {
+            return 'Today';
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric'
+            });
+        }
     }
 };

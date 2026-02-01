@@ -16,7 +16,7 @@ app.get('/api/health', (req, res) => {
 
 // Order automation endpoint
 app.post('/api/order', async (req, res) => {
-    const { storeUrl, storeName, items, specialInstructions } = req.body;
+    const { storeUrl, storeName, items, specialInstructions, options } = req.body;
 
     // Validate request
     if (!storeUrl) {
@@ -33,11 +33,18 @@ app.post('/api/order', async (req, res) => {
         return res.status(400).json({ error: 'Invalid URL format' });
     }
 
+    const headless = options?.headless || false;
+    const chromeProfile = options?.chromeProfile || null;
+    const deliveryAddress = options?.deliveryAddress || null;
+
     console.log(`\n${'='.repeat(50)}`);
     console.log(`Order automation requested`);
     console.log(`Store: ${storeName || 'Unknown'}`);
     console.log(`URL: ${storeUrl}`);
     console.log(`Items: ${items?.length || 0}`);
+    console.log(`Mode: ${headless ? 'headless' : 'visible'}`);
+    if (chromeProfile) console.log(`Chrome profile: ${chromeProfile}`);
+    if (deliveryAddress) console.log(`Delivery address: ${deliveryAddress}`);
     console.log(`${'='.repeat(50)}\n`);
 
     try {
@@ -45,7 +52,8 @@ app.post('/api/order', async (req, res) => {
             storeUrl,
             storeName,
             items: items || [],
-            specialInstructions: specialInstructions || ''
+            specialInstructions: specialInstructions || '',
+            options: { headless, chromeProfile, deliveryAddress }
         });
 
         res.json({

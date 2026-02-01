@@ -120,7 +120,11 @@ const Scheduler = {
 
         // Auto-open if enabled
         if (schedule.settings.autoOpen) {
-            DoorDash.triggerOrder(favorite);
+            DoorDash.triggerOrder(favorite, {
+                triggeredBy: 'schedule',
+                scheduleId: schedule.id,
+                scheduleName: schedule.name
+            });
         }
 
         // Refresh UI
@@ -204,7 +208,11 @@ const Scheduler = {
             return;
         }
 
-        // Trigger the order
-        DoorDash.triggerOrder(favorite);
+        // Trigger the order with schedule info
+        DoorDash.triggerOrder(favorite, {
+            triggeredBy: 'schedule',
+            scheduleId: schedule.id,
+            scheduleName: schedule.name
+        });
     }
 };
