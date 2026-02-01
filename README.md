@@ -1,7 +1,5 @@
 # Web Workflow Automation Engine
 
-**A local-first automation system that replaces repetitive, manual web-based workflows using headless browser automation, scheduling, and persistence.**
-
 A local-first automation system that replaces repetitive, manual web-based workflows across web applications without APIs, saving startups time and reducing operational bottlenecks.
 
 ---
@@ -25,33 +23,33 @@ This engine uses **browser automation as the integration layer**. Instead of wai
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Browser (Client)                        │
+│                      Browser (Client)                       │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐  │
 │  │  Workflow   │  │  Scheduler  │  │   Execution History │  │
 │  │  Templates  │  │  (Polling)  │  │   (Audit Trail)     │  │
 │  └──────┬──────┘  └──────┬──────┘  └──────────┬──────────┘  │
-│         │                │                     │             │
-│         └────────────────┼─────────────────────┘             │
-│                          │                                   │
-│                    localStorage                              │
-└──────────────────────────┼───────────────────────────────────┘
+│         │                │                     │            │
+│         └────────────────┼─────────────────────┘            │
+│                          │                                  │
+│                    localStorage                             │
+└──────────────────────────┼──────────────────────────────────┘
                            │ HTTP
-┌──────────────────────────┼───────────────────────────────────┐
-│                   Automation Server                          │
+┌──────────────────────────┼──────────────────────────────────┐
+│                   Automation Server                         │
 │  ┌─────────────┐  ┌──────┴──────┐  ┌─────────────────────┐  │
 │  │   Express   │  │  Puppeteer  │  │   Selector Engine   │  │
 │  │   REST API  │  │  (Headless) │  │   (Fuzzy Matching)  │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────┘  │
-└──────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ### Key Design Decisions
 
 | Decision | Rationale |
 |----------|-----------|
-| **Local-first** | No cloud dependencies. Runs on your machine, your data stays local. |
+| **Local-first** | No cloud dependencies. Runs on locally on your machine, everything is local|
 | **No framework** | Vanilla JS keeps the codebase hackable. Easy to understand, modify, extend. |
-| **No database** | localStorage is sufficient for personal automation. Zero setup. |
+| **No database** | localStorage is sufficient for personal automation.|
 | **Visible + Headless modes** | Debug visually, run in production headlessly. |
 | **Chrome profile support** | Reuse existing auth sessions instead of handling login flows. |
 | **Fuzzy matching** | Real-world UIs have inconsistent naming. Exact matches fail. |
@@ -211,6 +209,9 @@ open index.html
 - [ ] Multi-workflow orchestration (chains, conditionals)
 
 ---
+## Fonts
+
+This project uses **Inter 4.1** under the [SIL Open Font License (OFL 1.1)](Inter-4.1/OFL.txt).
 
 ## License
 
