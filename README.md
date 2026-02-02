@@ -184,7 +184,7 @@ open index.html
 │   └── puppeteer/
 │       ├── autoorder.js       # Automation implementation
 │       └── selectors.js       # Target site DOM selectors
-└── Inter-4.1/                 # Typography
+└── fonts/                     # Inter variable font (OFL 1.1 license)
 ```
 
 ---
